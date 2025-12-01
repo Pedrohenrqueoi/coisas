@@ -1,0 +1,71 @@
+.timeline-container {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem;
+  border-radius: var(--radius-m);
+  margin: 2rem 0;
+}
+.timeline-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.timeline-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: var(--bg-black);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+.timeline-canvas {
+  width: 100%;
+  height: 100%;
+}
+.timeline-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  cursor: ew-resize;
+  z-index: 10;
+}
+.timeline-marker.start {
+  background: var(--color-secondary);
+  left: 0;
+}
+.timeline-marker.end {
+  background: var(--color-primary);
+  right: 0;
+}
+.timeline-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(144, 196, 61, 0.3);
+  border: 2px solid var(--color-secondary);
+  pointer-events: none;
+}
+.time-display-box {
+  background: rgba(6, 164, 226, 0.1);
+  padding: 1.5rem;
+  border-radius: var(--radius-m);
+  margin-top: 1rem;
+  border: 2px solid var(--color-primary);
+}
+.time-display-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  text-align: center;
+}
+.time-display-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.time-display-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+}

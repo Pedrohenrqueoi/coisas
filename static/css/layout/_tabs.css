@@ -1,0 +1,37 @@
+/* ===================================================
+   TABS & NAVIGATION - Atualizado para Sidebar
+   =================================================== */
+
+.nav-tab {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-tab.active {
+  background: rgba(58, 125, 255, 0.2);
+  color: #3A7DFF;
+}
+
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

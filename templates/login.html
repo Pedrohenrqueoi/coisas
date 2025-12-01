@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - BinhoCut</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-96">
+        <h1 class="text-3xl font-bold mb-6">Login</h1>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Email" required
+                   class="w-full p-3 mb-4 bg-gray-700 rounded">
+            <input type="password" id="password" placeholder="Senha" required
+                   class="w-full p-3 mb-4 bg-gray-700 rounded">
+            <button type="submit" class="w-full p-3 bg-blue-600 rounded hover:bg-blue-700">
+                Entrar
+            </button>
+        </form>
+        <p class="mt-4 text-center">
+            Não tem conta? <a href="/register" class="text-blue-400">Registre-se</a>
+        </p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, password})
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    localStorage.setItem('access_token', data.access_token);
+                    window.location.href = '/';
+                } else {
+                    alert('Erro: ' + data.error);
+                }
+            } catch (error) {
+                alert('Erro ao fazer login: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
