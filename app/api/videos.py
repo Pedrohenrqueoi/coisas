@@ -5,7 +5,7 @@ Videos API Endpoints
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
-import moviepy.editor as mpy
+from moviepy.editor import VideoFileClip
 from pathlib import Path
 
 from app import db, limiter
@@ -18,6 +18,9 @@ from app.tasks.video_tasks import process_video_task
 videos_bp = Blueprint('videos', __name__)
 
 
+@jwt_required()
+@limiter.limit("10 per hour")
+@check_usage_limit('video')
 @videos_bp.route('/upload', methods=['POST'])
 @jwt_required()
 @limiter.limit("10 per hour")
@@ -27,10 +30,14 @@ def upload_video():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
+    print(f"📤 Upload iniciado por user_id: {user_id}")
+    
     if 'video' not in request.files:
+        print("❌ Nenhum arquivo 'video' no request.files")
         return jsonify({"error": "No video file provided"}), 400
     
     file = request.files['video']
+    print(f"📁 Arquivo recebido: {file.filename}")
     
     # Validate file
     from flask import current_app
@@ -40,48 +47,70 @@ def upload_video():
     )
     
     if not is_valid:
+        print(f"❌ Validação falhou: {error}")
         return jsonify({"error": error}), 400
     
-    # Save file
-    file_path, s3_key = save_uploaded_file(file, user_id, folder='videos')
+    print(f"✅ Arquivo válido: {file_info}")
     
-    # Validate video properties
-    path_to_check = file_path if file_path else Path(current_app.config['TEMP_FOLDER']) / file_info['secure_filename']
-    
-    from flask import current_app
-    plan_limits = current_app.config['PLANS'][user.plan]
-    
-    is_valid, error, video_metadata = validate_video_properties(
-        path_to_check if file_path else file_path,
-        plan_limits
-    )
-    
-    if not is_valid:
-        return jsonify({"error": error}), 400
-    
-    # Create video record
-    video = Video(
-        user_id=user_id,
-        filename=file_info['secure_filename'],
-        original_filename=file_info['original_filename'],
-        file_size_mb=file_info['file_size_mb'],
-        file_path=file_path,
-        s3_key=s3_key,
-        duration=video_metadata['duration'],
-        width=video_metadata['width'],
-        height=video_metadata['height'],
-        fps=video_metadata['fps'],
-        codec=video_metadata['codec'],
-        status='uploaded'
-    )
-    
-    db.session.add(video)
-    db.session.commit()
-    
-    return jsonify({
-        "message": "Video uploaded successfully",
-        "video": video.to_dict()
-    }), 201
+    try:
+        # Save file
+        file_path, s3_key = save_uploaded_file(file, user_id, folder='videos')
+        print(f"💾 Arquivo salvo: {file_path or s3_key}")
+        
+        # Get video metadata
+        from moviepy.editor import VideoFileClip
+        
+        with VideoFileClip(file_path) as clip:
+            video_metadata = {
+                'duration': clip.duration,
+                'width': clip.w,
+                'height': clip.h,
+                'fps': clip.fps,
+                'codec': 'h264'
+            }
+        
+        print(f"📊 Metadata: {video_metadata}")
+        
+        # Validate against plan limits
+        plan_limits = current_app.config['PLANS'][user.plan]
+        max_duration = plan_limits.get('max_video_duration', -1)
+        
+        if max_duration != -1 and video_metadata['duration'] > max_duration:
+            return jsonify({
+                "error": f"Video too long ({video_metadata['duration']:.0f}s). Max: {max_duration}s for {user.plan} plan"
+            }), 400
+        
+        # Create video record
+        video = Video(
+            user_id=user_id,
+            filename=file_info['secure_filename'],
+            original_filename=file_info['original_filename'],
+            file_size_mb=file_info['file_size_mb'],
+            file_path=file_path,
+            s3_key=s3_key,
+            duration=video_metadata['duration'],
+            width=video_metadata['width'],
+            height=video_metadata['height'],
+            fps=video_metadata['fps'],
+            codec=video_metadata['codec'],
+            status='uploaded'
+        )
+        
+        db.session.add(video)
+        db.session.commit()
+        
+        print(f"✅ Vídeo #{video.id} criado com sucesso!")
+        
+        return jsonify({
+            "message": "Video uploaded successfully",
+            "video": video.to_dict()
+        }), 201
+        
+    except Exception as e:
+        print(f"❌ ERRO NO UPLOAD: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @videos_bp.route('/<int:video_id>/process', methods=['POST'])

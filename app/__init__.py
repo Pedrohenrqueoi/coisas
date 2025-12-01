@@ -73,6 +73,10 @@ def create_app(config_name='development'):
     app.register_blueprint(videos_bp, url_prefix='/api/videos')
     app.register_blueprint(clips_bp, url_prefix='/api/clips')
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
+
+    # Register preferences routes (without /api prefix)
+    from app.api.preferences import preferences_bp
+    app.register_blueprint(preferences_bp)
     
     # Register main routes
     from app.routes import main_bp
